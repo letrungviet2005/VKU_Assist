@@ -1,0 +1,84 @@
+# Bien moi truong va thong tin bi mat
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+.aws/
+secrets/
+credentials.json
+service-account*.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Node va frontend hien co
+node_modules/
+dist/
+build/
+.vite/
+.npm/
+*.tsbuildinfo
+
+# Python va moi truong ao
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+*.egg
+
+# Cache va ket qua kiem thu
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage/
+htmlcov/
+.coverage
+.coverage.*
+
+# Log
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Du lieu cuc bo va tai lieu nhap vao he thong
+/backend/data/*
+!/backend/data/.gitkeep
+
+# Ket qua danh gia sinh tu dong
+/evaluation/results/*
+!/evaluation/results/.gitkeep
+
+# Chi muc vector va trong so mo hinh
+*.faiss
+*.index
+*.npy
+*.npz
+*.pkl
+*.pickle
+*.pt
+*.pth
+*.onnx
+*.safetensors
+
+# Co so du lieu cuc bo
+*.db
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+
+# Cau hinh IDE va file he dieu hanh
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
