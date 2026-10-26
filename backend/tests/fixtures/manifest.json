@@ -1,0 +1,20 @@
+[
+  {
+    "file": "academic.md",
+    "document_id": "demo-academic",
+    "title": "Minh họa tra cứu học tập (không chính thức)",
+    "source_url": "https://example.org/demo/academic",
+    "category": "academic",
+    "applicable_year": null,
+    "document_version": "demo-v1"
+  },
+  {
+    "file": "admissions.txt",
+    "document_id": "demo-admissions",
+    "title": "Minh họa hồ sơ tuyển sinh (không chính thức)",
+    "source_url": "https://example.org/demo/admissions",
+    "category": "admissions",
+    "applicable_year": 2026,
+    "document_version": "demo-v1"
+  }
+]

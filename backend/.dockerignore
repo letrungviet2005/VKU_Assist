@@ -1,0 +1,26 @@
+# Allow only application source and dependency manifest into the build context.
+**
+!requirements.txt
+!app/
+!app/**
+**/__pycache__/
+**/*.py[cod]
+**/.env*
+**/.aws/
+**/.venv/
+**/.model-cache/
+**/indexes/
+**/data/
+**/.cache/
+**/*.safetensors
+**/*.faiss
+**/*.index
+**/*.pt
+**/*.pth
+**/*.onnx
+**/*.npy
+**/*.npz
+**/*.bin
+**/*.pem
+**/*.key
+**/credentials*

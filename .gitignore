@@ -67,6 +67,10 @@ pnpm-debug.log*
 *.onnx
 *.safetensors
 
+# Local retrieval bundles and prepared model cache
+/backend/indexes/
+/backend/.model-cache/
+
 # Co so du lieu cuc bo
 *.db
 *.sqlite
