@@ -1,122 +1,86 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+/**
+ * VKU ASSIST - ROOT APPLICATION COMPONENT
+ * Người thực hiện: Thanh Vương
+ * Vai trò: 
+ * - Quản lý trạng thái toàn cục: Chủ đề (Dark/Light), Chế độ hoạt động (Dữ liệu mẫu / Backend thật),
+ *   Tab hiển thị (Tra cứu / Quản trị), và Token phiên đăng nhập Admin.
+ * - Điều phối đồng bộ trạng thái giao diện giữa Navbar và các trang ChatPage / AdminPage.
+ */
+
+import { useState, useEffect } from 'react';
+import { Navbar } from './components/Navbar';
+import { ChatPage } from './pages/ChatPage';
+import { AdminPage } from './pages/AdminPage';
+import { storage } from './services/storage';
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  // Trạng thái Theme (dark / light)
+  const [theme, setTheme] = useState(storage.getTheme());
+  
+  // Tab hiện tại ('chat' cho Tra cứu, 'admin' cho Quản trị kho văn bản)
+  const [activeTab, setActiveTab] = useState('chat');
+  
+  // Chế độ dữ liệu mẫu Mock (true) hoặc kết nối FastAPI Backend thật (false)
+  const [isMockMode, setIsMockMode] = useState(storage.getMockMode());
+  
+  // Trạng thái mở/đóng Sidebar bảng điều khiển RAG
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  
+  // Token xác thực Quản trị viên (lấy từ LocalStorage để duy trì phiên làm việc)
+  const [adminToken, setAdminToken] = useState(() => storage.getAdminToken());
+
+  // Đồng bộ theme vào thuộc tính data-theme của thẻ <html> để CSS biến đổi toàn bộ màu sắc
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    storage.setTheme(theme);
+  }, [theme]);
+
+  // Lưu lựa chọn chế độ Dữ liệu mẫu / Backend thật vào LocalStorage
+  useEffect(() => {
+    storage.setMockMode(isMockMode);
+  }, [isMockMode]);
+
+  // Xử lý đăng xuất Quản trị viên: Hủy token và cập nhật giao diện
+  const handleLogout = () => {
+    storage.setAdminToken(null);
+    setAdminToken(null);
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="app-shell">
+      {/* Thanh Header điều hướng trên cùng */}
+      <Navbar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        theme={theme}
+        setTheme={setTheme}
+        isMockMode={isMockMode}
+        setIsMockMode={setIsMockMode}
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
+        adminToken={adminToken}
+        onLogout={handleLogout}
+      />
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      {/* Vùng nội dung hiển thị chính */}
+      <div className="app-content-body">
+        {activeTab === 'chat' ? (
+          <ChatPage 
+            isMockMode={isMockMode} 
+            isSidebarOpen={isSidebarOpen}
+            setIsSidebarOpen={setIsSidebarOpen}
+          />
+        ) : (
+          <AdminPage 
+            token={adminToken}
+            setToken={setAdminToken}
+            onLogout={handleLogout}
+          />
+        )}
+      </div>
+    </div>
+  );
 }
 
-export default App
+export default App;
