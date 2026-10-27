@@ -16,5 +16,11 @@ def ready(request: Request) -> JSONResponse:
         return JSONResponse(status_code=503, content={
             "status": "not_ready", "reason": request.app.state.retrieval_reason,
         })
+    if request.app.state.settings.chat_enabled:
+        reason = request.app.state.chat_reason
+        if reason:
+            return JSONResponse(status_code=503, content={"status": "not_ready", "reason": reason})
+        return JSONResponse(content={"status": "ready", "index_version": retriever.version,
+                                     "scope": "retrieval_and_chat_configuration"})
     return JSONResponse(content={"status": "ready", "index_version": retriever.version,
                                  "scope": "retrieval"})

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "dataset_id": "manual-pilot-draft",
+  "purpose": "development_only_not_final_evaluation",
+  "review_status": "codex_draft_pending_thu_trang_and_second_reviewer",
+  "questions": [
+    {
+      "question_id": "P01",
+      "question": "Điền câu hỏi sau khi đọc tài liệu gốc.",
+      "category": "academic",
+      "applicable_year": null,
+      "kind": "answerable",
+      "expected_status": "answered",
+      "key_points": ["Điền ý đối chiếu từ tài liệu, không từ LLM."],
+      "evidence": [
+        {"document_id": "REPLACE_WITH_VERIFIED_ID", "section_contains": "", "support_excerpt": "REPLACE_WITH_SOURCE_EXCERPT", "chunk_ids": [], "confirmed": false}
+      ],
+      "review_status": "codex_draft_pending_thu_trang_and_second_reviewer",
+      "reviewers": [],
+      "notes": "Không dùng mẫu chưa điền để báo cáo số liệu."
+    }
+  ]
+}

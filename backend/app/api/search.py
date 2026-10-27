@@ -1,8 +1,10 @@
 from fastapi import APIRouter, HTTPException, Request
 
+from app.core.errors import ErrorEnvelope
+
 from app.rag.schemas import SearchInput
 
-router = APIRouter(tags=["retrieval"])
+router = APIRouter(tags=["retrieval"], responses={status: {"model": ErrorEnvelope} for status in (422, 503)})
 
 
 @router.post("/api/search")

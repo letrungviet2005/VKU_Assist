@@ -16,7 +16,7 @@ def main():
         sock.bind(('127.0.0.1', 0))
         port = sock.getsockname()[1]
     root = Path(__file__).resolve().parents[1]
-    env = dict(os.environ, APP_ENV='development', RETRIEVAL_ENABLED='true',
+    env = dict(os.environ, APP_ENV='development', RETRIEVAL_ENABLED='true', CHAT_ENABLED='false',
                INDEX_DIR=str(root / 'indexes'), MODEL_CACHE=str(root / '.model-cache'),
                HF_HUB_OFFLINE='1', TRANSFORMERS_OFFLINE='1')
     with tempfile.TemporaryFile(mode='w+', encoding='utf-8') as log:

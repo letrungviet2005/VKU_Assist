@@ -22,6 +22,17 @@ class Settings(BaseSettings):
     chunk_size: int = Field(default=300, ge=16, le=512)
     chunk_overlap: int = Field(default=50, ge=0)
     search_top_k: int = Field(default=5, ge=1, le=10)
+    chat_enabled: bool = False
+    llm_provider: Literal["bedrock", "fake"] = "bedrock"
+    bedrock_region: str = ""
+    bedrock_model_id: str = ""
+    bedrock_aws_profile: str | None = None
+    llm_connect_timeout: float = Field(default=5, gt=0, le=60)
+    llm_read_timeout: float = Field(default=60, gt=0, le=300)
+    llm_max_output_tokens: int = Field(default=1024, ge=64, le=8192)
+    chat_max_message_chars: int = Field(default=2000, ge=1, le=2000)
+    chat_max_context_chars: int = Field(default=12000, ge=1, le=100000)
+    chat_max_concurrency: int = Field(default=2, ge=1, le=32)
 
     @model_validator(mode="after")
     def validate_chunking(self):

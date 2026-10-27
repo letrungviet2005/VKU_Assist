@@ -21,7 +21,7 @@ class BackendSmokeTests(unittest.TestCase):
         cls.base = f"http://127.0.0.1:{port}"
         cls.log = tempfile.TemporaryFile(mode="w+", encoding="utf-8")
         env = dict(os.environ, APP_NAME="VKU Assist Test", APP_ENV="test", LOG_LEVEL="INFO",
-                   RETRIEVAL_ENABLED="false",
+                   RETRIEVAL_ENABLED="false", CHAT_ENABLED="false",
                    CORS_ORIGINS='["http://localhost:5173","http://127.0.0.1:5173"]')
         cls.process = subprocess.Popen(
             [sys.executable, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1",

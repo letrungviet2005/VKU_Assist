@@ -1,9 +1,14 @@
 # Truy xuất cục bộ có nguồn
 
-Giai đoạn này chỉ đọc tài liệu, chia đoạn, embedding và tìm kiếm. Chưa có LLM,
-chat, OCR, crawler, upload, lịch sử hay triển khai AWS. Không cần Docker/AWS.
+Phần này mô tả đọc tài liệu, chia đoạn, embedding và tìm kiếm cục bộ.
+Chat một lượt với Bedrock/fake đã được bổ sung riêng ở [chat.md](chat.md).
+Chưa có OCR, crawler, upload, lịch sử hay triển khai AWS. Retrieval không cần Docker/AWS.
 Fixture tại `backend/tests/fixtures/` là **minh họa kiểm thử, không phải thông tin
 chính thức VKU**; URL example.org chỉ là nguồn minh họa. Không dùng để tư vấn tuyển sinh.
+
+Kho pilot VKU thật được chuẩn bị riêng ở `backend/data/vku-pilot/` và
+`backend/indexes/vku-pilot/`; xem [hướng dẫn pilot](../evaluation/README.md).
+Không thay pointer hoặc gold của fixture; nguồn/gold pilot chưa được con người duyệt.
 
 ## Cài đặt và chuẩn bị model
 
@@ -122,9 +127,10 @@ $Body = @{query='Tra cứu lịch học ở đâu?'; top_k=3; category='academic
 Invoke-RestMethod -Uri http://127.0.0.1:8000/api/search -Method Post -ContentType 'application/json; charset=utf-8' -Body ([Text.Encoding]::UTF8.GetBytes($Body))
 ```
 
-Ctrl+C dừng API. `/ready` 200 chỉ xác nhận retrieval; thiếu index/model hoặc mismatch
+Ctrl+C dừng API. Khi CHAT_ENABLED=false, `/ready` 200 chỉ xác nhận retrieval; thiếu index/model hoặc mismatch
 thì 503, `/health` vẫn 200. Probe không tải model/gọi mạng. Search chỉ có ở
-APP_ENV=development, ngoài ra 404. Xem [API](api.md) cho schema và mã lỗi.
+APP_ENV=development, ngoài ra 404. Khi chat được bật, readiness còn đòi hỏi cấu hình
+adapter hợp lệ nhưng không gọi AWS để kiểm tra quyền/quota. Xem [API](api.md) cho schema và mã lỗi.
 
 ## Bundle và độ tin cậy
 
