@@ -62,6 +62,52 @@ docker stop vku-assist-backend
 `/health` phải trả 200; `/ready` **phải trả 503** với
 `retrieval_not_initialized` vì giai đoạn này chưa có retrieval/chỉ mục.
 
+## Triển khai Toàn trình Đa dịch vụ bằng Docker Compose (Khuyên dùng)
+
+Hệ thống cung cấp kịch bản đóng gói và triển khai đồng bộ cả Frontend React và Backend FastAPI thông qua tệp cấu hình `infra/compose.yaml`.
+
+### 1. Kiến trúc phân hệ Containers:
+* **`frontend` (Port 80):** Multi-stage Nginx Alpine phục vụ giao diện người dùng React/Vite, đồng thời đóng vai trò Reverse Proxy chuyển tiếp các yêu cầu `/api/`, `/health`, `/ready` tới Backend.
+* **`backend` (Port 8000):** Dịch vụ FastAPI xử lý RAG Pipeline, Vector store FAISS, LLM và API quản trị kho văn bản. Chạy dưới quyền `appuser` (UID 10001).
+* **Named Volumes:**
+  - `vku-assist-data`: Lưu trữ cơ sở dữ liệu SQLite (`vku_assist.db`), các tệp tài liệu văn bản tải lên.
+  - `vku-assist-indexes`: Lưu trữ các gói chỉ mục bất biến và con trỏ nguyên tử `active.json`.
+  - `vku-assist-model-cache`: Lưu trữ cache mô hình HuggingFace (`multilingual-e5-small`) tránh tải lại khi khởi động lại container.
+
+### 2. Khởi chạy tự động với Kịch bản Triển khai:
+
+* **Trên máy chủ Linux / Amazon EC2:**
+  ```bash
+  chmod +x infra/deploy.sh
+  ./infra/deploy.sh
+  ```
+
+* **Trên Windows PowerShell:**
+  ```powershell
+  .\infra\deploy.ps1
+  ```
+
+* **Hoặc thực thi lệnh Docker Compose trực tiếp:**
+  ```bash
+  cd infra
+  docker compose -f compose.yaml up -d --build
+  ```
+
+Kịch bản tự động kiểm tra cấu hình `.env`, đóng gói image với layer cache tối ưu, chờ healthcheck của backend đạt 200 OK và in báo cáo trạng thái ra màn hình.
+
+### 3. Kiểm tra và giám sát:
+```bash
+# Xem trạng thái các container
+docker compose -f infra/compose.yaml ps
+
+# Xem nhật ký hoạt động (Logs)
+docker compose -f infra/compose.yaml logs -f backend
+docker compose -f infra/compose.yaml logs -f frontend
+
+# Dừng và hạ dịch vụ an toàn
+docker compose -f infra/compose.yaml down
+```
+
 ## Kiểm chứng tự động cục bộ
 
 Từ **thư mục gốc repository**:

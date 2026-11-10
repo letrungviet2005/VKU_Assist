@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import patch
 
 import numpy as np
+import pytest
 from fastapi.testclient import TestClient
 from pydantic import HttpUrl
 
@@ -46,6 +47,7 @@ class FakeEmbedder:
         return vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
 
 
+@pytest.mark.rag
 class RetrievalTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()

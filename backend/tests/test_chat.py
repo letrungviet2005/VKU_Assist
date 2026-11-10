@@ -8,6 +8,7 @@ import boto3
 from botocore.exceptions import ReadTimeoutError, ConnectTimeoutError
 from botocore.stub import Stubber
 from fastapi.testclient import TestClient
+import pytest
 
 from app.core.config import Settings
 from app.core.errors import ServiceError
@@ -31,6 +32,8 @@ class StubRetriever:
         self.search = Mock(return_value=[chunk()] if results is None else results)
 
 
+@pytest.mark.rag
+@pytest.mark.api
 class ChatTests(unittest.TestCase):
     def setUp(self):
         self.settings = Settings(_env_file=None, app_env='test', retrieval_enabled=True,

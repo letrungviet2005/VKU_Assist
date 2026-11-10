@@ -19,11 +19,19 @@ class Settings(BaseSettings):
     model_cache: Path = Path(".model-cache")
     data_dir: Path = Path("data")
     index_dir: Path = Path("indexes")
+    db_path: Path = Path("data/vku_assist.db")
+    storage_backend: Literal["sqlite", "dynamodb"] = "sqlite"
+    dynamodb_table_name: str = "vku_assist_persistence"
+    dynamodb_region: str = "ap-southeast-1"
+    dynamodb_endpoint_url: str | None = None
+    s3_bucket_name: str | None = None
+    s3_region: str = "ap-southeast-1"
+    s3_endpoint_url: str | None = None
     chunk_size: int = Field(default=300, ge=16, le=512)
     chunk_overlap: int = Field(default=50, ge=0)
     search_top_k: int = Field(default=5, ge=1, le=10)
     chat_enabled: bool = False
-    llm_provider: Literal["bedrock", "fake"] = "bedrock"
+    llm_provider: Literal["bedrock", "fake", "extractive"] = "bedrock"
     bedrock_region: str = ""
     bedrock_model_id: str = ""
     bedrock_aws_profile: str | None = None
@@ -33,6 +41,11 @@ class Settings(BaseSettings):
     chat_max_message_chars: int = Field(default=2000, ge=1, le=2000)
     chat_max_context_chars: int = Field(default=12000, ge=1, le=100000)
     chat_max_concurrency: int = Field(default=2, ge=1, le=32)
+    admin_username: str = Field(default="admin", min_length=1)
+    admin_password: str = Field(default="vku2026", min_length=4)
+    jwt_secret_key: str = Field(default="vku-assist-super-secret-jwt-key-2026-production", min_length=16)
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = Field(default=1440, ge=1)
 
     @model_validator(mode="after")
     def validate_chunking(self):

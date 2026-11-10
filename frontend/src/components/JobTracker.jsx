@@ -1,18 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Activity, CheckCircle, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
-import { storage } from '../services/storage';
+import { api } from '../services/api';
 
-export function JobTracker() {
-  const [jobs, setJobs] = useState(() => storage.getJobs());
+export function JobTracker({ isMockMode = true }) {
+  const [jobs, setJobs] = useState([]);
 
-  const refreshJobs = () => {
-    setJobs(storage.getJobs());
-  };
+  const refreshJobs = useCallback(async () => {
+    try {
+      const list = await api.getJobs(isMockMode);
+      setJobs(list || []);
+    } catch {
+      // Ignore background poll error
+    }
+  }, [isMockMode]);
 
   useEffect(() => {
+    const initialTimer = setTimeout(refreshJobs, 50);
     const timer = setInterval(refreshJobs, 3000);
-    return () => clearInterval(timer);
-  }, []);
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(timer);
+    };
+  }, [refreshJobs]);
 
   if (jobs.length === 0) return null;
 
@@ -20,13 +29,13 @@ export function JobTracker() {
     <div className="job-tracker-card">
       <div className="job-tracker-header">
         <div className="job-tracker-title">
-          <Activity size={16} className="text-cyan animate-pulse" />
+          <Activity size={16} className="text-brand" />
           <span>Tiến trình xử lý chỉ mục nền (Background Worker Jobs)</span>
         </div>
-        <button 
-          type="button" 
-          className="job-refresh-btn" 
-          onClick={refreshJobs} 
+        <button
+          type="button"
+          className="job-refresh-btn"
+          onClick={refreshJobs}
           title="Làm mới tiến trình"
         >
           <RefreshCw size={13} />
@@ -45,8 +54,8 @@ export function JobTracker() {
               <div className="job-status-col">
                 {job.status === 'processing' && (
                   <span className="job-status-pill processing">
-                    <Clock size={12} className="spin" />
-                    <span>Đang trích xuất & tạo vector...</span>
+                    <Clock size={12} />
+                    <span>Đang trích xuất & tạo vector ({job.progress || 40}%)</span>
                   </span>
                 )}
                 {job.status === 'completed' && (
@@ -66,7 +75,7 @@ export function JobTracker() {
 
             {job.status === 'processing' && (
               <div className="job-progress-bar-bg">
-                <div className="job-progress-bar-fill indeterminate"></div>
+                <div className="job-progress-bar-fill indeterminate" />
               </div>
             )}
           </div>

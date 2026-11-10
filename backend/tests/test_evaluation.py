@@ -5,13 +5,15 @@ import json
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
+import pytest
 
 from app.cli.evaluate import (CallBudget, Question, Evidence, evaluate_question, reference_match,
-                              reviewed, summary, run)
+                              reference_rank, reviewed, summary, run)
 from app.core.config import Settings
 from app.core.errors import ServiceError
 
 
+@pytest.mark.rag
 class EvaluationTests(unittest.TestCase):
     def question(self, **updates):
         data = dict(question_id='P1', question='Một câu hỏi?', category='academic', applicable_year=None,
@@ -43,6 +45,34 @@ class EvaluationTests(unittest.TestCase):
         self.assertFalse(reference_match(Evidence(document_id='other'), [{'document_id':'doc'}]))
         self.assertTrue(reference_match(Evidence(document_id='doc',chunk_ids=['c']),
                                        [{'document_id':'doc','chunk_id':'c'}]))
+
+    def test_ranking_and_mrr_metrics(self):
+        chunks = [
+            {'document_id': 'doc_irrelevant', 'chunk_id': 'c0'},
+            {'document_id': 'doc_target', 'chunk_id': 'c1'},
+            {'document_id': 'doc_target', 'chunk_id': 'c2'},
+        ]
+        self.assertEqual(reference_rank(Evidence(document_id='doc_target', chunk_ids=['c1']), chunks), 2)
+        self.assertEqual(reference_rank(Evidence(document_id='doc_target', chunk_ids=['c0']), chunks), None)
+        self.assertEqual(reference_rank(Evidence(document_id='doc_irrelevant', chunk_ids=['c0']), chunks), 1)
+
+        row = {
+            'error_code': None,
+            'status': 'retrieved',
+            'valid_citations': None,
+            'duration_ms': 15.0,
+            'timeout_exceeded': False,
+            'reference_checks': [
+                {'confirmed': True, 'hit': True, 'rank': 2, 'reciprocal_rank': 0.5, 'hit_at_1': False, 'hit_at_3': True, 'hit_at_5': True}
+            ]
+        }
+        res = summary([row])
+        self.assertEqual(res['confirmed_reference_count'], 1)
+        self.assertEqual(res['confirmed_retrieval_hit_rate'], 1.0)
+        self.assertEqual(res['mrr'], 0.5)
+        self.assertEqual(res['hit_rate_at_1'], 0.0)
+        self.assertEqual(res['hit_rate_at_3'], 1.0)
+        self.assertEqual(res['hit_rate_at_5'], 1.0)
 
     def test_budget_and_deadline_do_not_invoke_generator(self):
         budget = CallBudget(1)

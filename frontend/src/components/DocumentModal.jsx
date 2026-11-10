@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { X, UploadCloud, FileText, CheckCircle2 } from 'lucide-react';
 import { api } from '../services/api';
 
-export function DocumentModal({ onClose, onSuccess }) {
+export function DocumentModal({ onClose, onSuccess, isMockMode = true }) {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('academic');
   const [sourceUrl, setSourceUrl] = useState('');
@@ -28,14 +28,17 @@ export function DocumentModal({ onClose, onSuccess }) {
 
     setSubmitting(true);
     try {
-      await api.uploadDocument({
-        title: title.trim(),
-        category,
-        source_url: sourceUrl.trim(),
-        applicable_year: applicableYear,
-        issue_date: issueDate,
-        file,
-      });
+      await api.uploadDocument(
+        {
+          title: title.trim(),
+          category,
+          source_url: sourceUrl.trim(),
+          applicable_year: applicableYear,
+          issue_date: issueDate,
+          file,
+        },
+        isMockMode
+      );
       setSuccess(true);
       setTimeout(() => {
         onSuccess?.();

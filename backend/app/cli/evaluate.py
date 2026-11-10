@@ -76,6 +76,19 @@ def reference_match(reference, results):
     return False
 
 
+def reference_rank(reference, results):
+    for rank, chunk in enumerate(results, start=1):
+        if chunk['document_id'] != reference.document_id:
+            continue
+        if reference.chunk_ids:
+            if chunk['chunk_id'] in reference.chunk_ids:
+                return rank
+        elif (reference.section_contains in str(chunk['page_or_section'] or '')
+              and reference.support_excerpt in chunk['text']):
+            return rank
+    return None
+
+
 def reviewed(question):
     names = {name.strip().casefold() for name in question.reviewers if name.strip()}
     return question.review_status == 'human_approved' and len(names) >= 2 and 'thu trang' in names
@@ -158,8 +171,23 @@ def evaluate_question(question, retriever, settings, mode, adapter, budget, time
     row['retrieval_results'] = capture.results
     row['generation_called'] = generator.called
     row['token_usage'] = generator.usage
-    row['reference_checks'] = [dict(document_id=e.document_id,
-        confirmed=e.confirmed and reviewed(question), hit=reference_match(e, capture.results)) for e in question.evidence]
+    checks = []
+    for e in question.evidence:
+        rank = reference_rank(e, capture.results)
+        hit = rank is not None
+        confirmed = e.confirmed and reviewed(question)
+        rr = (1.0 / rank) if rank else 0.0
+        checks.append(dict(
+            document_id=e.document_id,
+            confirmed=confirmed,
+            hit=hit,
+            rank=rank,
+            reciprocal_rank=rr,
+            hit_at_1=(rank == 1),
+            hit_at_3=(rank is not None and rank <= 3),
+            hit_at_5=(rank is not None and rank <= 5),
+        ))
+    row['reference_checks'] = checks
     if row['status'] == 'answered' and row['error_code'] is None:
         # ChatService already validates IDs against contexts actually sent to the adapter.
         row['valid_citations'] = bool(row['sources'])
@@ -172,12 +200,29 @@ def summary(rows):
     errors = sum(row['error_code'] is not None for row in rows)
     answered = [r for r in rows if r['status'] == 'answered' and not r['error_code']]
     references = [check for row in rows for check in row['reference_checks'] if check['confirmed']]
-    return dict(questions=len(rows), technical_errors=errors, technical_error_rate=errors / len(rows),
-        answered_count=len(answered), answered_valid_citation_rate=(sum(r['valid_citations'] for r in answered) / len(answered)) if answered else None,
-        confirmed_reference_count=len(references), confirmed_retrieval_hit_rate=(sum(r['hit'] for r in references) / len(references)) if references else None,
-        mean_duration_ms=sum(r['duration_ms'] for r in rows) / len(rows),
+    reciprocal_ranks = [check.get('reciprocal_rank', 1.0 if check['hit'] else 0.0) for check in references]
+    mrr = (sum(reciprocal_ranks) / len(reciprocal_ranks)) if references else None
+    hit_at_1 = (sum(check.get('hit_at_1', False) for check in references) / len(references)) if references else None
+    hit_at_3 = (sum(check.get('hit_at_3', False) for check in references) / len(references)) if references else None
+    hit_at_5 = (sum(check.get('hit_at_5', False) for check in references) / len(references)) if references else None
+
+    return dict(
+        questions=len(rows),
+        technical_errors=errors,
+        technical_error_rate=errors / len(rows),
+        answered_count=len(answered),
+        answered_valid_citation_rate=(sum(r['valid_citations'] for r in answered) / len(answered)) if answered else None,
+        confirmed_reference_count=len(references),
+        confirmed_retrieval_hit_rate=(sum(r['hit'] for r in references) / len(references)) if references else None,
+        mrr=round(mrr, 4) if mrr is not None else None,
+        hit_rate_at_1=round(hit_at_1, 4) if hit_at_1 is not None else None,
+        hit_rate_at_3=round(hit_at_3, 4) if hit_at_3 is not None else None,
+        hit_rate_at_5=round(hit_at_5, 4) if hit_at_5 is not None else None,
+        mean_duration_ms=round(sum(r['duration_ms'] for r in rows) / len(rows), 2) if rows else 0,
         timeout_exceeded_count=sum(r['timeout_exceeded'] for r in rows),
-        content_accuracy=None, human_review_status='not_scored; fill manual_review.csv')
+        content_accuracy=None,
+        human_review_status='not_scored; fill manual_review.csv',
+    )
 
 
 def run(args):

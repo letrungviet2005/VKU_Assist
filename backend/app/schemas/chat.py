@@ -22,6 +22,30 @@ class ChatInput(BaseModel):
         return value
 
 
+class HistoryTurn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=4000)
+
+
+class ChatStreamInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    message: str = Field(min_length=1, max_length=2000)
+    category: Category | None = None
+    applicable_year: int | None = Field(default=None, ge=1900, le=2200)
+    document_id: str | None = Field(default=None, max_length=120)
+    session_id: str | None = Field(default=None, max_length=120)
+    history: list[HistoryTurn] = Field(default_factory=list, max_length=12)
+
+    @field_validator("message")
+    @classmethod
+    def nonblank(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("message must contain text")
+        return value
+
+
 class ModelAnswer(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     status: ChatStatus
@@ -47,4 +71,4 @@ class ChatOutput(BaseModel):
     answer: str
     sources: list[Source]
     index_version: str
-    generation_mode: Literal["bedrock", "fake"]
+    generation_mode: Literal["bedrock", "fake", "extractive"]

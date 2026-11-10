@@ -161,3 +161,220 @@ Trong Swagger `/docs`, chọn POST /api/chat → Try it out; không truyền ses
 
 Không trả nguyên output lỗi từ model hoặc lỗi SDK. Validation không echo nội dung
 đầu vào. `/health` và `/ready` giữ schema probe riêng như mô tả phía trên.
+
+## API Quản lý Phiên hội thoại (/api/sessions)
+
+Hỗ trợ lưu trữ bền vững lịch sử cuộc trò chuyện giữa sinh viên và trợ lý ảo. Dữ liệu được lưu trong tầng Persistence SQLite (hỗ trợ chuyển đổi sang DynamoDB khi triển khai đa vùng AWS).
+
+### 1. Khởi tạo phiên mới (`POST /api/sessions`)
+* **HTTP:** 201 Created
+* **Body JSON:**
+  ```json
+  {
+    "title": "Tra cứu học bổng khuyến khích",
+    "id": "session_optional_custom_id",
+    "session_token": "tok_anonymous_student"
+  }
+  ```
+* **Response (HTTP 201):**
+  ```json
+  {
+    "id": "session_a1b2c3d4e5f6",
+    "title": "Tra cứu học bổng khuyến khích",
+    "created_at": "2026-11-06T05:00:00+00:00",
+    "updated_at": "2026-11-06T05:00:00+00:00",
+    "messages": []
+  }
+  ```
+
+### 2. Danh sách các phiên (`GET /api/sessions`)
+* **HTTP:** 200 OK
+* **Query Params:** `session_token` (tùy chọn), `limit` (mặc định 50, tối đa 100), `offset` (mặc định 0).
+* **Response:**
+  ```json
+  {
+    "sessions": [
+      {
+        "id": "session_a1b2c3d4e5f6",
+        "title": "Tra cứu học bổng",
+        "created_at": "...",
+        "updated_at": "...",
+        "message_count": 4
+      }
+    ],
+    "total": 1
+  }
+  ```
+
+### 3. Chi tiết phiên và lịch sử tin nhắn (`GET /api/sessions/{session_id}`)
+* **HTTP:** 200 OK / 404 Not Found
+* **Response:** Trả về thông tin phiên kèm mảng `messages` đầy đủ.
+
+### 4. Đổi tên phiên hội thoại (`PATCH /api/sessions/{session_id}`)
+* **HTTP:** 200 OK / 404 Not Found
+* **Body JSON:** `{"title": "Tiêu đề mới"}`
+
+### 5. Xóa phiên (`DELETE /api/sessions/{session_id}`)
+* **HTTP:** 200 OK / 404 Not Found
+* **Response:** `{"status": "deleted", "id": "session_a1b2c3d4e5f6"}` (tự động xóa cascade các messages thuộc phiên).
+
+### 6. Xóa tất cả phiên (`DELETE /api/sessions`)
+* **HTTP:** 200 OK
+* **Query Params:** `session_token` (tùy chọn để xóa theo người dùng).
+* **Response:** `{"status": "cleared", "deleted_count": 5}`
+
+### 7. Thêm tin nhắn vào phiên (`POST /api/sessions/{session_id}/messages`)
+* **HTTP:** 201 Created
+* **Body JSON:**
+  ```json
+  {
+    "role": "user",
+    "content": "Điều kiện xét học bổng kỳ 1?",
+    "status": null,
+    "sources": null
+  }
+  ```
+
+---
+
+## API Thu thập & Quản lý Phản hồi Sinh viên (/api/feedback)
+
+Ghi nhận đánh giá Hữu ích (`helpful`) hoặc Chưa thỏa đáng (`not_helpful`) kèm nội dung góp ý từ người dùng, làm cơ sở để cải thiện RAG Pipeline và tinh chỉnh prompt.
+
+### 1. Gửi phản hồi (`POST /api/feedback`)
+* **HTTP:** 201 Created / 422 Invalid Request
+* **Body JSON:**
+  ```json
+  {
+    "message_id": "msg_884fbf31",
+    "rating": "helpful",
+    "comment": "Thông tin chuẩn xác theo đề án 2026, trích dẫn rõ ràng.",
+    "session_id": "session_a1b2c3d4e5f6"
+  }
+  ```
+* **Response:**
+  ```json
+  {
+    "feedback_id": "fb_e1f2g3h4",
+    "message_id": "msg_884fbf31",
+    "session_id": "session_a1b2c3d4e5f6",
+    "rating": "helpful",
+    "comment": "Thông tin chuẩn xác theo đề án 2026, trích dẫn rõ ràng.",
+    "created_at": "2026-11-06T05:10:00+00:00",
+    "status": "recorded"
+  }
+  ```
+
+### 2. Danh sách phản hồi (`GET /api/feedback`)
+* **HTTP:** 200 OK
+* **Query Params:** `limit` (mặc định 100), `offset` (mặc định 0).
+* **Response:**
+  ```json
+  {
+    "items": [...],
+    "total": 12
+  }
+  ```
+
+### 3. Xóa phản hồi (`DELETE /api/feedback/{feedback_id}`)
+* **HTTP:** 200 OK / 404 Not Found
+
+---
+
+## API Quản trị Kho Văn bản Tri thức (/api/admin)
+
+Hệ thống API dành cho Quản trị viên phục vụ quản lý quy chế, quyết định tuyển sinh, tải lên văn bản và theo dõi tiến trình bóc tách, nhúng vector nền.
+
+Mọi API quản trị (trừ `/login`) đều yêu cầu header xác thực:
+`Authorization: Bearer <admin_access_token>`
+
+### 1. Đăng nhập Quản trị viên (`POST /api/admin/login`)
+* **HTTP:** 200 OK / 401 Unauthorized / 422 Invalid Request
+* **Body JSON:**
+  ```json
+  {
+    "username": "admin",
+    "password": "vku2026"
+  }
+  ```
+* **Response (HTTP 200):**
+  ```json
+  {
+    "access_token": "eyJhbGciOi...",
+    "token_type": "bearer",
+    "expires_at": 1794019200000
+  }
+  ```
+
+### 2. Danh sách văn bản kho tri thức (`GET /api/admin/documents`)
+* **HTTP:** 200 OK / 401 Unauthorized
+* **Query Params:**
+  - `category`: `academic` | `admissions` | `all` (tùy chọn)
+  - `status`: `ready` | `processing` | `failed` | `all` (tùy chọn)
+  - `search`: từ khóa tìm kiếm trong tiêu đề hoặc ID văn bản (tùy chọn)
+* **Response:** Mảng danh sách tài liệu:
+  ```json
+  [
+    {
+      "document_id": "doc-vku-admissions-2026",
+      "title": "Đề án tuyển sinh Đại học chính quy VKU năm 2026",
+      "category": "admissions",
+      "source_url": "https://vku.udn.vn/tuyen-sinh/de-an-tuyen-sinh-2026",
+      "applicable_year": 2026,
+      "issue_date": "2026-01-15",
+      "version": "v2.1",
+      "status": "ready",
+      "chunks_count": 142,
+      "size_mb": 3.4,
+      "updated_at": "2026-11-06T08:30:00+00:00"
+    }
+  ]
+  ```
+
+### 3. Chi tiết tài liệu (`GET /api/admin/documents/{document_id}`)
+* **HTTP:** 200 OK / 404 Not Found
+
+### 4. Tải lên văn bản & Kích hoạt chỉ mục nền (`POST /api/admin/documents`)
+* **HTTP:** 202 Accepted / 422 Invalid Request
+* **Hỗ trợ 2 định dạng yêu cầu:**
+  - **Multipart Form-Data:** kèm tệp `.pdf`, `.txt`, `.md`, `.docx`, trường `title`, `category`, `applicable_year`, `source_url`.
+  - **JSON Body:** `{"title": "...", "category": "academic", "applicable_year": 2026, "source_url": "..."}`
+* **Response (HTTP 202):**
+  ```json
+  {
+    "document_id": "doc_a1b2c3d4",
+    "job_id": "job_e5f6g7h8",
+    "status": "accepted"
+  }
+  ```
+
+### 5. Theo dõi tiến trình chỉ mục nền (`GET /api/admin/jobs/{job_id}`)
+* **HTTP:** 200 OK / 404 Not Found
+* **Response:**
+  ```json
+  {
+    "job_id": "job_e5f6g7h8",
+    "document_id": "doc_a1b2c3d4",
+    "status": "processing",
+    "progress": 50,
+    "title": "Đề án tuyển sinh 2026 sửa đổi",
+    "index_version": null,
+    "error_message": null,
+    "created_at": "2026-11-06T10:15:00+00:00",
+    "updated_at": "2026-11-06T10:15:01+00:00"
+  }
+  ```
+
+### 6. Danh sách tác vụ nền gần đây (`GET /api/admin/jobs`)
+* **HTTP:** 200 OK
+* **Query Params:** `limit` (mặc định 20)
+
+### 7. Xóa tài liệu (`DELETE /api/admin/documents/{document_id}`)
+* **HTTP:** 200 OK / 404 Not Found
+* **Response:**
+  ```json
+  {
+    "status": "deleted",
+    "document_id": "doc-vku-tuition-fee-2026"
+  }
+  ```

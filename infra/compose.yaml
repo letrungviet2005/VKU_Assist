@@ -1,0 +1,77 @@
+# ==============================================================================
+# VKU Assist - Production Multi-Container Orchestration (Docker Compose v2)
+# ==============================================================================
+name: vku-assist
+
+services:
+  # ----------------------------------------------------------------------------
+  # Backend API & RAG Knowledge Engine (FastAPI)
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    image: vku-assist-backend:latest
+    container_name: vku-assist-backend
+    restart: unless-stopped
+    env_file:
+      - ../backend/.env
+    environment:
+      - APP_ENV=production
+      - RETRIEVAL_ENABLED=true
+      - CHAT_ENABLED=true
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend-data:/app/data
+      - backend-indexes:/app/indexes
+      - backend-model-cache:/app/.model-cache
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - vku-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ----------------------------------------------------------------------------
+  # Frontend User Interface & Nginx Gateway (React/Vite)
+  # ----------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    image: vku-assist-frontend:latest
+    container_name: vku-assist-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - vku-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  backend-data:
+    name: vku-assist-data
+  backend-indexes:
+    name: vku-assist-indexes
+  backend-model-cache:
+    name: vku-assist-model-cache
+
+networks:
+  vku-net:
+    name: vku-assist-network
+    driver: bridge
